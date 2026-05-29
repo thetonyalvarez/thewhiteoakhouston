@@ -53,11 +53,13 @@ Work through these in order:
 5. ✅ **Phase 4: Bone placeholder icons + OG metadata** — COMPLETED
 6. ✅ **Phase 5: GitHub repo + initial push** — COMPLETED
 7. ✅ **Phase 6: Vercel auto-deploy from `main`** — COMPLETED (live at https://thewhiteoakhouston.vercel.app/)
-8. 🔒 **[Phase 7: Propertybase wiring](tasks/active/01-wire-propertybase-lead-capture.md)** ← **DO THIS NEXT** (field mapping done, blocked on auth + credentials)
+8. 🔒 **[Phase 7: Propertybase wiring](tasks/active/01-wire-propertybase-lead-capture.md)** ← **DO THIS NEXT** ([field mapping done](tasks/completed/propertybase-field-mapping.md); blocked on auth + Connected App credentials)
 9. 📋 **[Phase 8: Bot / spam protection](tasks/active/02-bot-spam-protection.md)** — honeypot field + optional Turnstile, before DNS cutover
 10. **[Phase 9: Real brand assets swap](tasks/backlog/swap-placeholder-icons-for-real-brand.md)** — when brand engagement signs
 11. **[Phase 10: API hardening](tasks/backlog/)** — rate limit, structured logging, integration tests, a11y axe checks
-12. **Phase 11: DNS cutover from Squarespace** — requires Henrry/owner sign-off
+12. **[Phase 11: Vercel Web Analytics](tasks/backlog/vercel-web-analytics.md)** — pre-launch nice-to-have for inquiry-rate visibility
+13. **[Phase 12: DNS cutover from Squarespace](tasks/backlog/dns-cutover-from-squarespace.md)** — when everything above is green
+14. **[Phase 13: Transfer repo + Vercel project to Nan org](tasks/backlog/transfer-to-nan-org.md)** — when engagement signs
 
 ## 📚 Documentation Structure
 

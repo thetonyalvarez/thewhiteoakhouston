@@ -21,12 +21,14 @@ npm test           # run unit tests
 
 ## Current Status
 - ✅ Landing page deployed — "The Heights, Rooted." + Hear From Us modal
-- ✅ `/api/subscribe` endpoint validates leads (currently logs server-side; Propertybase wiring next)
+- ✅ `/api/subscribe` validates leads + context and builds the full PB-shaped Inquiry payload (logs server-side; HTTP POST is next)
+- ✅ Propertybase field mapping done — 15 fields land cleanly per the live PB org's schema
 - ✅ Bone placeholder icons across favicon, apple-touch, Open Graph
-- ✅ Vitest harness with 17 assertions on lead validation
+- ✅ Vitest harness with 39 assertions across validators + mapping
 - ✅ Vercel auto-deploy from GitHub `main`
-- 🚧 Propertybase wiring (blocked on credentials)
-- 📋 DNS cutover from Squarespace (requires Henrry/owner sign-off)
+- 🚧 Propertybase HTTP client + auth (blocked on Connected App credentials + auth-flow decision)
+- 📋 Bot / spam protection (queued as active task #02)
+- 📋 DNS cutover from Squarespace
 - 📋 Real brand assets (blocked on engagement signing)
 
 ## Documentation
