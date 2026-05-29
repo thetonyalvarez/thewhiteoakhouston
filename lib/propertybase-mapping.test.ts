@@ -25,10 +25,7 @@ describe("buildInquiryPayload", () => {
   });
 
   it("always includes INQUIRY_DEFAULTS", () => {
-    const payload = buildInquiryPayload(lead);
-    for (const [key, value] of Object.entries(INQUIRY_DEFAULTS)) {
-      expect(payload[key]).toBe(value);
-    }
+    expect(buildInquiryPayload(lead)).toMatchObject(INQUIRY_DEFAULTS);
   });
 
   it("omits pba__Phone__c when phone is absent (undefined)", () => {

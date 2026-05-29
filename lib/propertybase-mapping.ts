@@ -4,15 +4,9 @@
  * Marketers call form submissions "leads"; in Salesforce/Propertybase they
  * become Inquiries on the `pba__Request__c` custom object. This module is
  * the bridge — the only place in the codebase that knows PB field naming.
- *
- * Mirrors the convention used in nan-crm/apps/agent-app/src/sf.ts:
- *   - PB-managed custom fields: `pba__FieldName__c`
- *   - PB-specific lookups:      `pba__FieldName_pb__c`
- *
- * Adding a new field later — 3-step recipe (no architectural changes):
- *   1. Add field to the form in app/components/HearFromUs.tsx
- *   2. Add field to the Lead type + rule in lib/validate-lead.ts (with a test)
- *   3. Add one row to FIELD_MAP below: pba__YourField__c: (l) => l.yourField
+ * Mirrors the convention used in `nan-crm/apps/agent-app/src/sf.ts`
+ * (managed-package fields use `pba__FieldName__c`; PB-specific lookups
+ * use `pba__FieldName_pb__c`).
  */
 
 import type { Lead } from "./validate-lead";
@@ -25,14 +19,14 @@ type SfFieldValue = string | number | boolean | null;
 type Mapper = (lead: Lead) => SfFieldValue | undefined;
 
 /**
- * Per-lead field mapping.
+ * Per-lead field mapping. Each key is a Salesforce API name on
+ * `pba__Request__c`; each value derives that field from the validated Lead.
+ * Return `undefined` to omit the field (e.g. optional fields left blank).
  *
- * Each key is the Salesforce API name of a field on `pba__Request__c`. Each
- * value is a function that derives that field's value from the validated
- * Lead. Functions may return `undefined` to omit the field entirely (e.g. for
- * optional fields the user left blank) — `buildInquiryPayload` drops those
- * before sending to PB so we never write empty strings into picklist or
- * required-but-defaulted fields.
+ * To add a new field (3 steps, no architectural changes):
+ *   1. Add field to the form in `app/components/HearFromUs.tsx`
+ *   2. Add field to the `Lead` type + rule in `lib/validate-lead.ts` (+ test)
+ *   3. Add one row below: `pba__YourField__c: (l) => l.yourField`
  */
 export const FIELD_MAP: Record<string, Mapper> = {
   pba__FirstName__c: (l) => l.firstName,
@@ -42,21 +36,15 @@ export const FIELD_MAP: Record<string, Mapper> = {
 };
 
 /**
- * Constants applied to every Inquiry created from this site.
+ * Constants applied to every Inquiry from this site. Edit when the org-wide
+ * taxonomy changes; anything varying per submission belongs in FIELD_MAP.
  *
- * Edit this when the org-wide taxonomy changes. Anything that varies per
- * submission belongs in FIELD_MAP, not here.
- *
- * TODO(pb-org): confirm the exact picklist value for `pba__Type__c` against
- *   the live PB org. "Web Form" matches nan-crm's createInquiry default but
- *   the picklist may vary per Salesforce instance.
- * TODO(pb-org): set `pba__Source__c` to whatever value the team uses to
- *   distinguish The White Oak captures from other inbound traffic.
- * TODO(pb-org): add `pba__Project_pb__c: "<Salesforce record ID>"` once we
- *   have the ID of the White Oak project record in PB. Required for the
- *   Inquiry to associate with the right project in dashboards.
- * TODO(pb-org): decide whether OwnerId is set here or left to PB workflow
- *   rules / assignment queues.
+ * TODO(pb-org): confirm `pba__Type__c` picklist value against the live org —
+ *   "Web Form" mirrors nan-crm's default but the picklist varies per instance.
+ * TODO(pb-org): set `pba__Source__c` to whatever distinguishes White Oak.
+ * TODO(pb-org): add `pba__Project_pb__c: "<SF record ID>"` once known —
+ *   required for the Inquiry to attach to the project in PB dashboards.
+ * TODO(pb-org): decide whether OwnerId is set here or by PB workflow rules.
  */
 export const INQUIRY_DEFAULTS: Record<string, SfFieldValue> = {
   pba__Status__c: "New",
@@ -64,13 +52,10 @@ export const INQUIRY_DEFAULTS: Record<string, SfFieldValue> = {
 };
 
 /**
- * Build the Salesforce-shaped payload for a single Inquiry.
- *
- * Strategy:
- *   1. Start with INQUIRY_DEFAULTS (constants).
- *   2. Apply each FIELD_MAP mapper to the Lead.
- *   3. Drop any field whose mapped value is undefined or an empty string,
- *      so PB never receives blanks for optional fields the user skipped.
+ * Build the Salesforce-shaped payload for a single Inquiry: start with
+ * INQUIRY_DEFAULTS, then apply each FIELD_MAP mapper, dropping any field
+ * whose mapped value is undefined or an empty string so PB never receives
+ * blanks for optional fields the user skipped.
  */
 export const buildInquiryPayload = (lead: Lead): Record<string, SfFieldValue> => {
   const payload: Record<string, SfFieldValue> = { ...INQUIRY_DEFAULTS };
