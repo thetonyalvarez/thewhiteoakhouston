@@ -43,6 +43,10 @@ export default function HearFromUs() {
       lastName: String(formData.get("lastName") ?? "").trim(),
       email: String(formData.get("email") ?? "").trim(),
       phone: String(formData.get("phone") ?? "").trim(),
+      // Captured automatically so PB can show which page produced each
+      // inquiry — useful when this site grows past one page. Maps to
+      // Signup_Site_URL__c via lib/propertybase-mapping.ts.
+      signupUrl: window.location.href,
     };
 
     try {

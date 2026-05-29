@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { validateLead } from "@/lib/validate-lead";
+import { validateInquiryContext } from "@/lib/validate-inquiry-context";
 import { buildInquiryPayload } from "@/lib/propertybase-mapping";
 
 /**
  * POST /api/subscribe
  *
  * Receives lead capture from the "Hear From Us" modal.
+ *
+ * Body shape:
+ *   { firstName, lastName, email, phone?, signupUrl }
  *
  * Today the route validates, builds the PB-shaped Inquiry payload, and logs
  * it server-side. Once Propertybase credentials + auth flow land, swap the
@@ -24,10 +28,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const v = validateLead(json);
-  if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+  const leadResult = validateLead(json);
+  if (!leadResult.ok) {
+    return NextResponse.json({ error: leadResult.error }, { status: 400 });
+  }
 
-  const inquiry = buildInquiryPayload(v.lead);
+  const contextResult = validateInquiryContext(json);
+  if (!contextResult.ok) {
+    return NextResponse.json({ error: contextResult.error }, { status: 400 });
+  }
+
+  const inquiry = buildInquiryPayload(leadResult.lead, contextResult.context);
 
   // TODO(propertybase): POST `inquiry` to /services/data/v60.0/sobjects/pba__Request__c here.
   console.info("[white-oak] inquiry captured (stub — not yet sent to Propertybase):", inquiry);
