@@ -8,15 +8,14 @@
  * (managed-package fields use `pba__FieldName__c`; PB-specific lookups
  * use `pba__FieldName_pb__c`; org-custom fields drop the `pba__` prefix).
  *
- * This module is pure — no env reads, no I/O. Anything org-scoped
- * (RecordTypeId, project record ID, owner ID) comes in via the `config`
- * parameter so the same code runs against sandbox in preview and
- * production in production. See `propertybase-config.ts` for the source.
+ * This module is pure — no env reads, no I/O. Sandbox vs. production
+ * differs only in the instance URL + Connected App credentials (handled
+ * by the HTTP client when it lands). The actual record/field values
+ * here are schema-shared across orgs, so they're safe to hardcode.
  */
 
 import type { Lead } from "./validate-lead";
 import type { InquiryContext } from "./validate-inquiry-context";
-import type { PropertybaseConfig } from "./propertybase-config";
 
 // Values allowed in a Salesforce sObject field. Booleans + numbers included
 // for future fields (checkboxes, currency, counts). `null` is reserved for
@@ -39,9 +38,6 @@ type Mapper = (lead: Lead, context: InquiryContext) => SfFieldValue | undefined;
  *   Submission metadata:
  *     1. Add field to `InquiryContext` + rule in `lib/validate-inquiry-context.ts`
  *     2. Add one row below: `Your_Field__c: (_, ctx) => ctx.yourField`
- *   Env / org-scoped (RecordTypeId, project ID, etc.):
- *     1. Add field to `PropertybaseConfig` + getter in `propertybase-config.ts`
- *     2. Reference `config.yourField` inside `buildInquiryPayload` below.
  */
 export const FIELD_MAP: Record<string, Mapper> = {
   pba__FirstName__c: (l) => l.firstName,
@@ -53,11 +49,11 @@ export const FIELD_MAP: Record<string, Mapper> = {
 
 /**
  * Constants applied to every Inquiry from this site. Edit when the org-wide
- * taxonomy changes; anything varying per submission belongs in FIELD_MAP;
- * anything varying per environment belongs in PropertybaseConfig.
+ * taxonomy changes; anything varying per submission belongs in FIELD_MAP.
  *
- * Picklist values are part of the Salesforce schema and replicate to
- * sandbox alongside production, so they're safe to hardcode here:
+ * All values here are schema-replicated between Nan's sandbox and
+ * production orgs (confirmed with Tony), so they're safe to hardcode:
+ *   RecordTypeId           — same ID in both orgs for the White Oak Inquiry type
  *   Contact_Type__c        — restricted multipicklist
  *   Inquiry_Type__c        — restricted picklist
  *   Lead_Type__c           — picklist
@@ -70,6 +66,7 @@ export const FIELD_MAP: Record<string, Mapper> = {
  *                            text marker for queries / dashboards
  */
 export const INQUIRY_DEFAULTS: Record<string, SfFieldValue> = {
+  RecordTypeId: "0121I000000kzBVQAY",
   Contact_Type__c: "Buyer",
   Inquiry_Type__c: "Buyer",
   Lead_Type__c: "Company Lead",
@@ -81,22 +78,16 @@ export const INQUIRY_DEFAULTS: Record<string, SfFieldValue> = {
 };
 
 /**
- * Build the Salesforce-shaped payload for a single Inquiry. Strategy:
- *   1. Start with INQUIRY_DEFAULTS (schema-level constants).
- *   2. Layer in `config` values that vary per environment (RecordTypeId).
- *   3. Apply each FIELD_MAP mapper for per-submission values.
- *   4. Drop any field whose mapped value is undefined or an empty string,
- *      so PB never receives blanks for optional fields the user skipped.
+ * Build the Salesforce-shaped payload for a single Inquiry: start with
+ * INQUIRY_DEFAULTS, then apply each FIELD_MAP mapper, dropping any field
+ * whose mapped value is undefined or an empty string so PB never receives
+ * blanks for optional fields the user skipped.
  */
 export const buildInquiryPayload = (
   lead: Lead,
   context: InquiryContext,
-  config: PropertybaseConfig,
 ): Record<string, SfFieldValue> => {
-  const payload: Record<string, SfFieldValue> = {
-    ...INQUIRY_DEFAULTS,
-    RecordTypeId: config.recordTypeId,
-  };
+  const payload: Record<string, SfFieldValue> = { ...INQUIRY_DEFAULTS };
 
   for (const [sfField, mapper] of Object.entries(FIELD_MAP)) {
     const value = mapper(lead, context);
