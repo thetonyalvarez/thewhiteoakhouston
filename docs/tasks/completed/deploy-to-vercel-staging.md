@@ -1,34 +1,25 @@
-# 01 — Deploy to Vercel Staging
+# Deploy to Vercel
+
+**Shipped:** Live at https://thewhiteoakhouston.vercel.app/
 
 ## Summary
-Connect the GitHub repo to Vercel and deploy to a `*.vercel.app` subdomain so Nancy and Henrry can review the lander before any DNS cutover from Squarespace. Zero-config — Vercel auto-detects Next.js.
+Connected the GitHub repo to Vercel via the dashboard import flow. Vercel auto-detected Next.js, no build configuration needed. Every push to `main` now triggers a production deploy; preview deploys spin up automatically for any branch.
 
-## Action Items
+## What Shipped
+- Production deployment at `thewhiteoakhouston.vercel.app`
+- Auto-deploy on push to `main`
+- All four icon endpoints serving (icon.png, apple-icon.png, opengraph-image.png, favicon.ico)
+- `/api/subscribe` returns 200 on valid payload, 400 on validation failure — verified live
 
-- [ ] Sign in at https://vercel.com with the appropriate account (Tony personal vs. Nan org — decision below)
-- [ ] Decide which Vercel account/team owns this project (see Decisions, below)
-- [ ] `New Project → Import Git Repository → thetonyalvarez/thewhiteoakhouston`
-- [ ] Accept the auto-detected Next.js settings (no build env vars needed yet — Propertybase creds come later)
-- [ ] Deploy
-- [ ] Confirm the resulting `*.vercel.app` URL renders the lander, the modal opens, and `POST /api/subscribe` returns `{"ok":true}` (lead lands in Vercel logs, not Propertybase yet)
-- [ ] Share the URL with Nancy first; she gates whether Henrry sees it
-- [ ] Add Vercel Web Analytics (free) so we have inquiry-rate data from day one
+## What Was Deferred (Not Blockers)
+- **Vercel Web Analytics** — one-toggle add in the Vercel dashboard plus `<Analytics />` from `@vercel/analytics/next`. Add when Tony wants traffic data.
+- **Vercel account / org transfer** — repo lives under Tony's personal GitHub; project sits under Tony's personal Vercel. Transfer to Nan org once engagement signs.
+- **Sharing with Nancy / Henrry** — Tony's call when to send the URL.
 
-## Decisions Deferred
+## Issue Caught + Fixed in Same Push Cycle
+First deploy's OG meta tag pointed to `https://thewhiteoakhouston.com/opengraph-image.png` — the apex domain, which is still Squarespace until DNS cutover. Anyone sharing the vercel.app URL would have gotten a broken preview card. Fixed: `metadataBase` now falls back to `VERCEL_URL` when `NEXT_PUBLIC_SITE_URL` isn't set, so previews resolve correctly from whatever URL the site is currently served at.
 
-- **Vercel account ownership:** Tony's personal account is fastest to spin up but couples this project to one person. If engagement signs, transfer to a Nan org. Tracked in `backlog/transfer-vercel-to-nan-org.md` once that decision is made.
-- **Branch deploys:** Default behavior pushes preview deploys for every branch. Fine for now (no contributors besides Tony). Reconsider when a second contributor joins.
-
-## Technical Details
-
-- Repo: https://github.com/thetonyalvarez/thewhiteoakhouston
-- Framework preset: Next.js (auto-detected)
-- Build command: `npm run build` (auto)
-- Output directory: `.next` (auto)
-- Node version: Vercel defaults to Node 20+, which is fine — local dev runs on Node 18 but production builds use Vercel's runtime
-- Environment variables: none required for the stub. When Propertybase wiring lands, add `PROPERTYBASE_*` vars in Vercel dashboard (see `02-wire-propertybase-lead-capture.md`)
-
-## Out of Scope
-
-- DNS cutover (`thewhiteoakhouston.com` repointing from Squarespace) — requires Henrry/owner sign-off; do that AFTER they review on `*.vercel.app`
-- Custom domain attachment in Vercel — also deferred until DNS decision
+## Key Decisions
+- **GitHub-push deploys, not CLI:** zero-friction, no `vercel` binary required locally
+- **No DNS cutover yet:** apex domain stays on Squarespace until Henrry/owner signs off; `vercel.app` URL is the review surface
+- **Production branch = `main`:** standard pattern, matches every sibling project
