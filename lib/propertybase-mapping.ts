@@ -64,6 +64,7 @@ export const FIELD_MAP: Record<string, Mapper> = {
  *   pba__Type_pb__c        — picklist
  *   Qualification_Notes__c — textarea(32768); the project name as a stable
  *                            text marker for queries / dashboards
+ *   OwnerId                — Henrry Pu as owner of Inquiry
  */
 export const INQUIRY_DEFAULTS: Record<string, SfFieldValue> = {
   RecordTypeId: "0121I000000kzBVQAY",
@@ -75,6 +76,7 @@ export const INQUIRY_DEFAULTS: Record<string, SfFieldValue> = {
   pba__Status__c: "Assigned",
   pba__Type_pb__c: "Buyer",
   Qualification_Notes__c: "The White Oak",
+  OwnerId: "0058W00000E7xm9QAB"
 };
 
 /**
