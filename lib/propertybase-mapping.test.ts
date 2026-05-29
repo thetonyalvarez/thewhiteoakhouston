@@ -6,6 +6,7 @@ import {
 } from "./propertybase-mapping";
 import type { Lead } from "./validate-lead";
 import type { InquiryContext } from "./validate-inquiry-context";
+import type { PropertybaseConfig } from "./propertybase-config";
 
 const lead: Lead = {
   firstName: "Nancy",
@@ -18,9 +19,15 @@ const context: InquiryContext = {
   signupUrl: "https://thewhiteoakhouston.com/",
 };
 
+// Stand-in for whatever sandbox/prod RecordTypeId the real config returns.
+// Tests stay independent of env vars by passing the config explicitly.
+const config: PropertybaseConfig = {
+  recordTypeId: "0121I000000kzBVQAY",
+};
+
 describe("buildInquiryPayload", () => {
   it("maps lead fields to their pba__*__c equivalents", () => {
-    const payload = buildInquiryPayload(lead, context);
+    const payload = buildInquiryPayload(lead, context, config);
     expect(payload).toMatchObject({
       pba__FirstName__c: "Nancy",
       pba__LastName__c: "Almodovar",
@@ -30,18 +37,31 @@ describe("buildInquiryPayload", () => {
   });
 
   it("maps the dynamic Signup_Site_URL__c from context", () => {
-    const payload = buildInquiryPayload(lead, {
-      signupUrl: "https://thewhiteoakhouston.vercel.app/?utm=email",
-    });
+    const payload = buildInquiryPayload(
+      lead,
+      { signupUrl: "https://thewhiteoakhouston.vercel.app/?utm=email" },
+      config,
+    );
     expect(payload.Signup_Site_URL__c).toBe("https://thewhiteoakhouston.vercel.app/?utm=email");
   });
 
   it("always includes INQUIRY_DEFAULTS", () => {
-    expect(buildInquiryPayload(lead, context)).toMatchObject(INQUIRY_DEFAULTS);
+    expect(buildInquiryPayload(lead, context, config)).toMatchObject(INQUIRY_DEFAULTS);
+  });
+
+  it("uses RecordTypeId from config (env-scoped, sandbox vs prod)", () => {
+    const sandboxConfig: PropertybaseConfig = { recordTypeId: "012SANDBOX00000000" };
+    const prodConfig: PropertybaseConfig = { recordTypeId: "012PROD000000000000" };
+    expect(buildInquiryPayload(lead, context, sandboxConfig).RecordTypeId).toBe(
+      "012SANDBOX00000000",
+    );
+    expect(buildInquiryPayload(lead, context, prodConfig).RecordTypeId).toBe(
+      "012PROD000000000000",
+    );
   });
 
   it("omits pba__Phone__c when phone is absent (undefined)", () => {
-    const payload = buildInquiryPayload({ ...lead, phone: undefined }, context);
+    const payload = buildInquiryPayload({ ...lead, phone: undefined }, context, config);
     expect(payload).not.toHaveProperty("pba__Phone__c");
     // Still has the required-by-validator fields and the defaults.
     expect(payload.pba__FirstName__c).toBe("Nancy");
@@ -52,7 +72,7 @@ describe("buildInquiryPayload", () => {
     // Should never reach the mapper in production (validator strips empties),
     // but the mapper itself must defend against it so an upstream regression
     // doesn't send blank picklist values into PB.
-    const payload = buildInquiryPayload({ ...lead, phone: "" }, context);
+    const payload = buildInquiryPayload({ ...lead, phone: "" }, context, config);
     expect(payload).not.toHaveProperty("pba__Phone__c");
   });
 
@@ -69,9 +89,10 @@ describe("buildInquiryPayload", () => {
       ip: "1.2.3.4",
       userAgent: "evil-bot/1.0",
     } as InquiryContext;
-    const payload = buildInquiryPayload(expandedLead, expandedContext);
+    const payload = buildInquiryPayload(expandedLead, expandedContext, config);
     const keys = Object.keys(payload).sort();
     const expectedKeys = [
+      "RecordTypeId",
       ...Object.keys(FIELD_MAP),
       ...Object.keys(INQUIRY_DEFAULTS),
     ].sort();
@@ -79,8 +100,8 @@ describe("buildInquiryPayload", () => {
   });
 
   it("returns a fresh object each call (no shared mutation of defaults)", () => {
-    const a = buildInquiryPayload(lead, context);
-    const b = buildInquiryPayload(lead, context);
+    const a = buildInquiryPayload(lead, context, config);
+    const b = buildInquiryPayload(lead, context, config);
     expect(a).not.toBe(b);
     a.pba__FirstName__c = "Tampered";
     expect(b.pba__FirstName__c).toBe("Nancy");

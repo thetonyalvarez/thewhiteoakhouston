@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { validateLead } from "@/lib/validate-lead";
 import { validateInquiryContext } from "@/lib/validate-inquiry-context";
 import { buildInquiryPayload } from "@/lib/propertybase-mapping";
+import { getPropertybaseConfig } from "@/lib/propertybase-config";
 
 /**
  * POST /api/subscribe
@@ -14,11 +15,11 @@ import { buildInquiryPayload } from "@/lib/propertybase-mapping";
  * Today the route validates, builds the PB-shaped Inquiry payload, and logs
  * it server-side. Once Propertybase credentials + auth flow land, swap the
  * `console.info` below for an HTTP POST to
- *   {PROPERTYBASE_INSTANCE_URL}/services/data/v60.0/sobjects/pba__Request__c
+ *   {getInstanceUrl()}/services/data/v60.0/sobjects/pba__Request__c
  * with a `Bearer <access_token>` header. Field shape is already correct.
  *
- * See `lib/propertybase-mapping.ts` for the field bridge.
- * See `.env.example` for the env vars that will be required.
+ * Sandbox vs. production switching happens via env vars only — see
+ * `lib/propertybase-config.ts` and `docs/how-to-guides/configure-propertybase-env.md`.
  */
 export async function POST(req: Request) {
   let json: unknown;
@@ -38,7 +39,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: contextResult.error }, { status: 400 });
   }
 
-  const inquiry = buildInquiryPayload(leadResult.lead, contextResult.context);
+  const config = getPropertybaseConfig();
+  const inquiry = buildInquiryPayload(leadResult.lead, contextResult.context, config);
 
   // TODO(propertybase): POST `inquiry` to /services/data/v60.0/sobjects/pba__Request__c here.
   console.info("[white-oak] inquiry captured (stub — not yet sent to Propertybase):", inquiry);
