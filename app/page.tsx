@@ -5,7 +5,7 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-24 bg-bone text-ink">
       <h1
         className="font-[family-name:var(--font-fraunces)] text-center text-ink leading-[0.95] tracking-[-0.02em] text-[clamp(3rem,12vw,9rem)] font-light"
-        style={{ fontVariationSettings: '"opsz" 144' }}
+        style={{ fontVariationSettings: '"opsz" 144, "SOFT" 0' }}
       >
         The Heights,
         <br />
