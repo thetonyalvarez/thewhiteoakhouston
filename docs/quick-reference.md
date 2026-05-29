@@ -24,9 +24,10 @@ node scripts/generate-placeholder-icons.mjs
 | Where | URL |
 |---|---|
 | Local dev | http://localhost:3000 |
+| Live deployment | https://thewhiteoakhouston.vercel.app |
 | GitHub repo | https://github.com/thetonyalvarez/thewhiteoakhouston |
-| Production domain (planned) | https://thewhiteoakhouston.com |
-| Squarespace (current public site) | https://thewhiteoakhouston.com |
+| Apex domain (still Squarespace until DNS cutover) | https://thewhiteoakhouston.com |
+| Vercel dashboard | https://vercel.com/thetonyalvarez/thewhiteoakhouston |
 
 ## File Locations
 

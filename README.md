@@ -2,6 +2,8 @@
 
 **Pre-launch landing page for The White Oak — a 42-residence boutique condo in Houston Heights.** Captures inquiries while the brand engagement, photography, and full site are in production.
 
+**Live:** https://thewhiteoakhouston.vercel.app/
+
 ## Quick Start
 
 ```bash
@@ -15,15 +17,16 @@ npm test           # run unit tests
 - Tailwind CSS 3.4.17
 - Fraunces (display) + Inter (UI) via `next/font/google`
 - Vitest + React Testing Library
-- Vercel (planned deployment target)
+- Vercel — auto-deploys on push to `main`
 
 ## Current Status
-- ✅ Landing page live locally — "The Heights, Rooted." + Hear From Us modal
-- ✅ `/api/subscribe` endpoint validates leads and stubs Propertybase delivery
+- ✅ Landing page deployed — "The Heights, Rooted." + Hear From Us modal
+- ✅ `/api/subscribe` endpoint validates leads (currently logs server-side; Propertybase wiring next)
 - ✅ Bone placeholder icons across favicon, apple-touch, Open Graph
 - ✅ Vitest harness with 17 assertions on lead validation
-- 🚧 Vercel staging deploy (next)
-- 📋 Propertybase wiring (blocked on credentials)
+- ✅ Vercel auto-deploy from GitHub `main`
+- 🚧 Propertybase wiring (blocked on credentials)
+- 📋 DNS cutover from Squarespace (requires Henrry/owner sign-off)
 - 📋 Real brand assets (blocked on engagement signing)
 
 ## Documentation
