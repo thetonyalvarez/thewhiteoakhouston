@@ -47,6 +47,10 @@ export default function HearFromUs() {
       // inquiry — useful when this site grows past one page. Maps to
       // Signup_Site_URL__c via lib/propertybase-mapping.ts.
       signupUrl: window.location.href,
+      // Honeypot: a real person never sees or fills this. A non-empty value
+      // signals a bot, and the server silently drops the submission. See
+      // app/api/subscribe/route.ts.
+      company: String(formData.get("company") ?? "").trim(),
     };
 
     try {
@@ -142,6 +146,33 @@ export default function HearFromUs() {
                 </div>
                 <Field label="Email" name="email" type="email" required />
                 <Field label="Phone" name="phone" type="tel" />
+
+                {/*
+                  Honeypot. Positioned off-screen and hidden from assistive
+                  tech, not in the tab order, and autocomplete-off so real
+                  users (and password managers) never fill it. Bots that fill
+                  every field will populate it, and the server drops those.
+                */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: "-9999px",
+                    width: 1,
+                    height: 1,
+                    overflow: "hidden",
+                  }}
+                >
+                  <label>
+                    Company
+                    <input
+                      type="text"
+                      name="company"
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
 
                 {errorMsg && (
                   <p className="text-sm text-red-700">{errorMsg}</p>

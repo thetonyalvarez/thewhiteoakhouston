@@ -28,12 +28,28 @@ import { emailNewLead, emailLostLead } from "@/lib/lead-email";
 // so a slow/hung Propertybase can't kill the function before the lead is saved.
 export const maxDuration = 30;
 
+// Hidden form field that real users never fill (see HearFromUs.tsx). Any value
+// here means a bot, and we drop the submission.
+const HONEYPOT_FIELD = "company";
+
 export async function POST(req: Request) {
   let json: unknown;
   try {
     json = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // Honeypot check, before any validation or downstream work. A filled
+  // honeypot is almost certainly a bot: return 200 so the bot can't tell it
+  // was caught, but never write to Propertybase or send an email.
+  const honeypot =
+    typeof json === "object" && json !== null
+      ? (json as Record<string, unknown>)[HONEYPOT_FIELD]
+      : undefined;
+  if (typeof honeypot === "string" && honeypot.trim() !== "") {
+    console.warn("[white-oak] honeypot filled — dropping likely-bot submission");
+    return NextResponse.json({ ok: true });
   }
 
   const leadResult = validateLead(json);

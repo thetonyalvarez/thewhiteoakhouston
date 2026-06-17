@@ -73,6 +73,29 @@ describe("POST /api/subscribe", () => {
     expect(emailLostLeadMock).not.toHaveBeenCalled();
   });
 
+  it("silently drops a submission with a filled honeypot (no PB, no email)", async () => {
+    const res = await post({ ...validLead, company: "Acme Spam Co" });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(submitInquiryMock).not.toHaveBeenCalled();
+    expect(emailNewLeadMock).not.toHaveBeenCalled();
+    expect(emailLostLeadMock).not.toHaveBeenCalled();
+  });
+
+  it("processes a submission whose honeypot is present but empty", async () => {
+    submitInquiryMock.mockResolvedValue({
+      contactId: "003X",
+      inquiryId: "a1B000000001",
+      contactCreated: true,
+    });
+
+    const res = await post({ ...validLead, company: "" });
+
+    expect(res.status).toBe(200);
+    expect(submitInquiryMock).toHaveBeenCalledOnce();
+  });
+
   it("rejects invalid JSON with 400", async () => {
     const res = await post("{not json");
     expect(res.status).toBe(400);
