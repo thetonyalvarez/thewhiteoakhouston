@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -10,6 +11,14 @@ export default function HearFromUs() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const firstFieldRef = useRef<HTMLInputElement>(null);
+
+  // Portal target. The overlay is position:fixed, but the page wraps this
+  // component in a transformed element (the hero entrance animation), which
+  // would otherwise become the containing block and trap the overlay. Render
+  // into document.body so no ancestor transform can capture it. Mount-gated so
+  // it never runs during SSR (document is unavailable there).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Close on Escape.
   useEffect(() => {
@@ -84,7 +93,7 @@ export default function HearFromUs() {
         Hear From Us
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
           className="wo-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm"
           onClick={(e) => {
@@ -205,7 +214,8 @@ export default function HearFromUs() {
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
