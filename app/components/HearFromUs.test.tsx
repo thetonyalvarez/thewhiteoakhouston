@@ -70,6 +70,20 @@ describe("HearFromUs", () => {
     expect(await screen.findByText(/thank you\./i)).toBeInTheDocument();
   });
 
+  it("submits an empty honeypot field that real users never fill", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+    const user = userEvent.setup();
+    render(<HearFromUs />);
+    const dialog = await openModal(user);
+
+    await fillRequiredFields(user, dialog);
+    await user.click(within(dialog).getByRole("button", { name: /submit/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(payload.company).toBe("");
+  });
+
   it("shows the server error message and keeps the form when submission fails", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
