@@ -54,6 +54,27 @@ describe("validateLead", () => {
     });
   });
 
+  it("rejects a firstName containing control characters (e.g. CR/LF)", () => {
+    expect(
+      validateLead({ firstName: "Nancy\r\nBcc: evil@x.com", lastName: "Y", email: "a@b.co" }),
+    ).toEqual({ ok: false, error: "First name is invalid" });
+  });
+
+  it("rejects an over-long lastName", () => {
+    expect(
+      validateLead({ firstName: "X", lastName: "a".repeat(101), email: "a@b.co" }),
+    ).toEqual({ ok: false, error: "Last name is invalid" });
+  });
+
+  it("accepts names with spaces, hyphens, apostrophes, and accents", () => {
+    const result = validateLead({
+      firstName: "Mary-Jane",
+      lastName: "O'Brien de la Cruz",
+      email: "mj@example.com",
+    });
+    expect(result.ok).toBe(true);
+  });
+
   it("treats phone as optional and omits it when blank", () => {
     const result = validateLead({
       firstName: "X",
