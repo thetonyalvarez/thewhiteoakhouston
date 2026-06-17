@@ -86,7 +86,7 @@ export default function HearFromUs() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm"
+          className="wo-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
           }}
@@ -96,7 +96,7 @@ export default function HearFromUs() {
         >
           <div
             ref={dialogRef}
-            className="bg-bone text-ink w-full max-w-md p-8 sm:p-10 shadow-2xl border border-ink/10"
+            className="wo-scale-in bg-bone text-ink w-full max-w-md p-8 sm:p-10 shadow-2xl border border-ink/10"
           >
             <div className="flex items-start justify-between mb-6">
               <h2
@@ -109,7 +109,7 @@ export default function HearFromUs() {
                 type="button"
                 aria-label="Close"
                 onClick={() => setOpen(false)}
-                className="text-ink/60 hover:text-ink text-2xl leading-none -mt-1"
+                className="text-ink/60 hover:text-ink text-2xl leading-none p-2 -m-2 -mt-3"
               >
                 ×
               </button>
@@ -140,12 +140,29 @@ export default function HearFromUs() {
                     ref={firstFieldRef}
                     label="First name"
                     name="firstName"
+                    autoComplete="given-name"
                     required
                   />
-                  <Field label="Last name" name="lastName" required />
+                  <Field
+                    label="Last name"
+                    name="lastName"
+                    autoComplete="family-name"
+                    required
+                  />
                 </div>
-                <Field label="Email" name="email" type="email" required />
-                <Field label="Phone" name="phone" type="tel" />
+                <Field
+                  label="Email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                />
+                <Field
+                  label="Phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                />
 
                 {/*
                   Honeypot. Positioned off-screen and hidden from assistive
@@ -175,7 +192,7 @@ export default function HearFromUs() {
                 </div>
 
                 {errorMsg && (
-                  <p className="text-sm text-red-700">{errorMsg}</p>
+                  <p className="text-sm text-[#7a2e22]">{errorMsg}</p>
                 )}
 
                 <button
@@ -200,15 +217,17 @@ const Field = ({
   name,
   type = "text",
   required = false,
+  autoComplete,
 }: {
   ref?: React.Ref<HTMLInputElement>;
   label: string;
   name: string;
   type?: string;
   required?: boolean;
+  autoComplete?: string;
 }) => (
   <label className="block">
-    <span className="block text-xs uppercase tracking-[0.15em] text-ink/60 mb-1.5">
+    <span className="block text-xs uppercase tracking-[0.15em] text-ink/70 mb-1.5">
       {label}
       {required && <span aria-hidden> *</span>}
     </span>
@@ -217,7 +236,8 @@ const Field = ({
       name={name}
       type={type}
       required={required}
-      className="w-full bg-transparent border-b border-ink/30 focus:border-ink outline-none py-2 text-ink"
+      autoComplete={autoComplete}
+      className="w-full bg-transparent border-b border-ink/40 focus:border-ink outline-none py-2.5 text-ink"
     />
   </label>
 );
