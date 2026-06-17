@@ -49,20 +49,21 @@ describe("validateInquiryContext", () => {
     });
   });
 
-  it.each([["not-a-url"], ["www.example.com"], ["://broken"], ["javascript:alert(1)"]])(
-    "rejects unparseable or unsafe URL %s",
-    (signupUrl) => {
-      const result = validateInquiryContext({ signupUrl });
-      // javascript: parses fine but isn't http/https; we accept it here at the
-      // validator level — the PB Salesforce field would store it as text. If
-      // we later want a scheme allowlist, this is where to enforce it.
-      if (signupUrl === "javascript:alert(1)") {
-        expect(result.ok).toBe(true);
-      } else {
-        expect(result).toEqual({ ok: false, error: "Signup URL must be a valid URL" });
-      }
-    },
-  );
+  it.each([
+    ["not-a-url"],
+    ["www.example.com"],
+    ["://broken"],
+    // Parseable but non-web schemes must be rejected so they can't be stored
+    // on the Inquiry or emailed to staff as a trusted-looking link.
+    ["javascript:alert(1)"],
+    ["data:text/html,<script>alert(1)</script>"],
+    ["file:///etc/passwd"],
+  ])("rejects unparseable or non-http(s) URL %s", (signupUrl) => {
+    expect(validateInquiryContext({ signupUrl })).toEqual({
+      ok: false,
+      error: "Signup URL must be a valid URL",
+    });
+  });
 
   it.each([[null], [undefined], ["string body"], [42], [["array"]]])(
     "rejects non-object body %s",

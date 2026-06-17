@@ -28,9 +28,19 @@ export const validateInquiryContext = (body: unknown): ValidateContextResult => 
   if (!signupUrl) return { ok: false, error: "Signup URL is required" };
 
   // Use the URL constructor as the validator — throws on anything not parseable.
+  let parsed: URL;
   try {
-    new URL(signupUrl);
+    parsed = new URL(signupUrl);
   } catch {
+    return { ok: false, error: "Signup URL must be a valid URL" };
+  }
+
+  // Scheme allowlist: only http(s). A parseable but non-web URL
+  // (javascript:, data:, file:, …) would otherwise be stored on the
+  // Salesforce Inquiry and rendered in the notification email to staff — a
+  // stored-link injection vector. The form only ever submits the page's own
+  // http(s) location, so legitimate input is unaffected.
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     return { ok: false, error: "Signup URL must be a valid URL" };
   }
 

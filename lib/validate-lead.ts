@@ -20,8 +20,17 @@ export type ValidateResult =
 // provider, not a regex — we just want to reject obviously malformed input.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Names are echoed into the notification email subject (unescaped, by design —
+// it's a JSON field, not an SMTP header) and written to the Salesforce Contact.
+// Reject control characters (incl. CR/LF) and cap length to keep both clean.
+const CONTROL_RE = /[\u0000-\u001F\u007F]/;
+const MAX_NAME_LEN = 100;
+
 const readString = (record: Record<string, unknown>, key: string): string =>
   typeof record[key] === "string" ? (record[key] as string).trim() : "";
+
+const isValidName = (value: string): boolean =>
+  value.length <= MAX_NAME_LEN && !CONTROL_RE.test(value);
 
 export const validateLead = (body: unknown): ValidateResult => {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -35,7 +44,9 @@ export const validateLead = (body: unknown): ValidateResult => {
   const phone = readString(record, "phone");
 
   if (!firstName) return { ok: false, error: "First name is required" };
+  if (!isValidName(firstName)) return { ok: false, error: "First name is invalid" };
   if (!lastName) return { ok: false, error: "Last name is required" };
+  if (!isValidName(lastName)) return { ok: false, error: "Last name is invalid" };
   if (!EMAIL_RE.test(email)) return { ok: false, error: "Valid email is required" };
 
   return {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   FIELD_MAP,
   INQUIRY_DEFAULTS,
+  buildContactPayload,
   buildInquiryPayload,
 } from "./propertybase-mapping";
 import type { Lead } from "./validate-lead";
@@ -18,47 +19,100 @@ const context: InquiryContext = {
   signupUrl: "https://thewhiteoakhouston.com/",
 };
 
+const CONTACT_ID = "003000000000001";
+
+describe("buildContactPayload", () => {
+  it("maps lead fields to standard Contact fields", () => {
+    expect(buildContactPayload(lead)).toEqual({
+      FirstName: "Nancy",
+      LastName: "Almodovar",
+      Email: "nancy@example.com",
+      Phone: "7135551234",
+    });
+  });
+
+  it("omits Phone when phone is absent", () => {
+    const payload = buildContactPayload({ ...lead, phone: undefined });
+    expect(payload).not.toHaveProperty("Phone");
+    expect(payload).toMatchObject({ FirstName: "Nancy", LastName: "Almodovar" });
+  });
+
+  it("only emits known Contact fields, never pba__*__c name fields", () => {
+    // Guards against the historical bug where name/phone were mapped to
+    // pba__FirstName__c etc., which do not exist on pba__Request__c.
+    const keys = Object.keys(buildContactPayload(lead)).sort();
+    expect(keys).toEqual(["Email", "FirstName", "LastName", "Phone"]);
+  });
+});
+
 describe("buildInquiryPayload", () => {
-  it("maps lead fields to their pba__*__c equivalents", () => {
-    const payload = buildInquiryPayload(lead, context);
+  it("links the Inquiry to the resolved Contact via pba__Contact__c", () => {
+    const payload = buildInquiryPayload(lead, context, CONTACT_ID);
+    expect(payload.pba__Contact__c).toBe(CONTACT_ID);
+  });
+
+  it("maps email + phone to the Inquiry's own Email__c / Mobile__c", () => {
+    const payload = buildInquiryPayload(lead, context, CONTACT_ID);
     expect(payload).toMatchObject({
-      pba__FirstName__c: "Nancy",
-      pba__LastName__c: "Almodovar",
-      pba__Email__c: "nancy@example.com",
-      pba__Phone__c: "7135551234",
+      Email__c: "nancy@example.com",
+      Mobile__c: "7135551234",
     });
   });
 
   it("maps the dynamic Signup_Site_URL__c from context", () => {
-    const payload = buildInquiryPayload(lead, {
-      signupUrl: "https://thewhiteoakhouston.vercel.app/?utm=email",
-    });
-    expect(payload.Signup_Site_URL__c).toBe("https://thewhiteoakhouston.vercel.app/?utm=email");
+    const payload = buildInquiryPayload(
+      lead,
+      { signupUrl: "https://thewhiteoakhouston.vercel.app/?utm=email" },
+      CONTACT_ID,
+    );
+    expect(payload.Signup_Site_URL__c).toBe(
+      "https://thewhiteoakhouston.vercel.app/?utm=email",
+    );
   });
 
   it("always includes INQUIRY_DEFAULTS", () => {
-    expect(buildInquiryPayload(lead, context)).toMatchObject(INQUIRY_DEFAULTS);
+    expect(buildInquiryPayload(lead, context, CONTACT_ID)).toMatchObject(
+      INQUIRY_DEFAULTS,
+    );
   });
 
-  it("omits pba__Phone__c when phone is absent (undefined)", () => {
-    const payload = buildInquiryPayload({ ...lead, phone: undefined }, context);
-    expect(payload).not.toHaveProperty("pba__Phone__c");
-    // Still has the required-by-validator fields and the defaults.
-    expect(payload.pba__FirstName__c).toBe("Nancy");
+  it("sets a non-empty Sales Rotation (its absence silently drops the inquiry)", () => {
+    // The PB allocation flow rolls back the insert when pbasr__Rotation_Name__c
+    // is missing/invalid, so this field is load-bearing for persistence.
+    const payload = buildInquiryPayload(lead, context, CONTACT_ID);
+    expect(payload.pbasr__Rotation_Name__c).toBeTruthy();
+  });
+
+  it("does not emit any field that fails to exist on pba__Request__c", () => {
+    const payload = buildInquiryPayload(lead, context, CONTACT_ID);
+    for (const dead of [
+      "pba__FirstName__c",
+      "pba__LastName__c",
+      "pba__Email__c",
+      "pba__Phone__c",
+      "Inquiry_Type__c",
+    ]) {
+      expect(payload).not.toHaveProperty(dead);
+    }
+  });
+
+  it("omits Mobile__c when phone is absent (undefined)", () => {
+    const payload = buildInquiryPayload(
+      { ...lead, phone: undefined },
+      context,
+      CONTACT_ID,
+    );
+    expect(payload).not.toHaveProperty("Mobile__c");
+    expect(payload.Email__c).toBe("nancy@example.com");
     expect(payload.pba__Status__c).toBe("Assigned");
   });
 
-  it("omits pba__Phone__c when phone is an empty string", () => {
-    // Should never reach the mapper in production (validator strips empties),
-    // but the mapper itself must defend against it so an upstream regression
-    // doesn't send blank picklist values into PB.
-    const payload = buildInquiryPayload({ ...lead, phone: "" }, context);
-    expect(payload).not.toHaveProperty("pba__Phone__c");
+  it("omits Mobile__c when phone is an empty string", () => {
+    const payload = buildInquiryPayload({ ...lead, phone: "" }, context, CONTACT_ID);
+    expect(payload).not.toHaveProperty("Mobile__c");
   });
 
   it("does not leak unknown fields from the Lead or Context", () => {
-    // A future refactor might let extra fields slip through validation. The
-    // mapper must only emit keys it knows about.
     const expandedLead = {
       ...lead,
       assignedTo: "attacker@example.com",
@@ -69,9 +123,10 @@ describe("buildInquiryPayload", () => {
       ip: "1.2.3.4",
       userAgent: "evil-bot/1.0",
     } as InquiryContext;
-    const payload = buildInquiryPayload(expandedLead, expandedContext);
+    const payload = buildInquiryPayload(expandedLead, expandedContext, CONTACT_ID);
     const keys = Object.keys(payload).sort();
     const expectedKeys = [
+      "pba__Contact__c",
       ...Object.keys(FIELD_MAP),
       ...Object.keys(INQUIRY_DEFAULTS),
     ].sort();
@@ -79,12 +134,11 @@ describe("buildInquiryPayload", () => {
   });
 
   it("returns a fresh object each call (no shared mutation of defaults)", () => {
-    const a = buildInquiryPayload(lead, context);
-    const b = buildInquiryPayload(lead, context);
+    const a = buildInquiryPayload(lead, context, CONTACT_ID);
+    const b = buildInquiryPayload(lead, context, CONTACT_ID);
     expect(a).not.toBe(b);
-    a.pba__FirstName__c = "Tampered";
-    expect(b.pba__FirstName__c).toBe("Nancy");
-    // And the source defaults stay untouched.
+    a.pba__Status__c = "Tampered";
+    expect(b.pba__Status__c).toBe("Assigned");
     expect(INQUIRY_DEFAULTS.pba__Status__c).toBe("Assigned");
   });
 });
