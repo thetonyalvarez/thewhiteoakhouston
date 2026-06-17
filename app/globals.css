@@ -22,3 +22,34 @@ body {
   font-feature-settings: "kern", "liga", "calt";
   font-optical-sizing: auto;
 }
+
+/*
+ * Motion. Entrance only — a quiet arrival, not a show. The hero staggers in
+ * on load; the inquiry modal fades + lifts on open. All of it collapses to
+ * nothing under prefers-reduced-motion. `both` fill keeps elements hidden
+ * until their delay fires, so nothing flashes pre-animation.
+ */
+@keyframes wo-fade-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes wo-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes wo-scale-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.wo-fade-rise { animation: wo-fade-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.wo-fade-in   { animation: wo-fade-in 0.2s ease-out both; }
+.wo-scale-in  { animation: wo-scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wo-fade-rise,
+  .wo-fade-in,
+  .wo-scale-in {
+    animation: none;
+  }
+}
